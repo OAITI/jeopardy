@@ -65,7 +65,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 
 server <- function(input, output, session) {
     
-    values <- reactiveValues(score = 0, c1 = c(), c2 = c(), c3 = c(), c4 = c(), c5 = c(), c6 = c())
+    values <- reactiveValues(score = 0)
     
     categories <- reactive({
         sample(unique(jeopardy$Category), 6)
@@ -143,8 +143,6 @@ server <- function(input, output, session) {
             toggleModal(session, "incorrectModal", toggle = "open")
         }
         
-        assign(paste0("values$c", selec[1,2] + 1), selec[1,1])
-
         updateTextInput(session, "answer", value = "")
     })
 
