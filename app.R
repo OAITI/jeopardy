@@ -4,6 +4,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(DT)
+library(shinyBS)
 
 ## Set images resource path
 addResourcePath("images", "images")
@@ -36,18 +37,35 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
           textOutput("question"),
           conditionalPanel(condition = "input.board_cells_selected.length > 0",
                            h4("Answer"),
-                           textInput("answer", "Answer")
+                           helpText("Type your answer here. Remember to answer in the form of a question!"),
+                           textInput("answer", "Answer"),
+                           actionButton("submit", "Submit")
           )
       ),
       
       mainPanel(
-          DT::dataTableOutput("board")
+          bsModal(id = 'correctModal', title = 'Correct Answer :)', trigger = '',
+                  size = 'medium', HTML("That is Correct!")),
+          
+          bsModal(id = 'incorrectModal', title = 'Incorrect Answer :(', trigger = '',
+                  size = 'medium', HTML("That is Incorrect!")),
+          
+          h3("Game Board"),
+          
+          div(DT::dataTableOutput("board"), style = "font-size: 125%; text-align: center"),
+          
+          hr(),
+          
+          h3("Score"),
+          div(textOutput("score"), style = "font-size: 200%")
           #DT::dataTableOutput("game")
       )
    )
 )
 
-server <- function(input, output) {
+server <- function(input, output, session) {
+    
+    values <- reactiveValues(score = 0, c1 = c(), c2 = c(), c3 = c(), c4 = c(), c5 = c(), c6 = c())
     
     categories <- reactive({
         sample(unique(jeopardy$Category), 6)
@@ -71,20 +89,27 @@ server <- function(input, output) {
     })
     
     board_data <- reactive({
-        names(board) <- categories()
+        names(board) <- paste0("<span style=\"color: yellow; background-color: #b0bed9\">", categories(), "</span>")
+
+        mydt <- datatable(board, 
+                          options = list(pageLength = 5,
+                                            paginate = FALSE,
+                                            searching = FALSE,
+                                            ordering = FALSE,
+                                            info = FALSE),
+                          selection = list(target = "cell", mode = "single"),
+                          escape = FALSE,
+                          rownames = FALSE) %>%
+            formatStyle(names(board), color = "yellow", backgroundColor = "blue")
         
-        return(board)
+        return(mydt)
     })
     
     output$board <- DT::renderDataTable(
-        board_data(), selection = list(target = "cell", mode = "single"), options = list(
-            pageLength = 5,
-            paginate = FALSE,
-            searching = FALSE,
-            ordering = FALSE,
-            info = FALSE
-        ), rownames = FALSE
+        board_data()
     )
+    
+    proxy = dataTableProxy("board")
     
     output$game <- DT::renderDataTable(
         game_data()
@@ -96,11 +121,31 @@ server <- function(input, output) {
         } else {
             selec <- input$board_cells_selected
             
-            #cat("Column is\n", selec[1,2])
-            #cat("Row is\n", selec[1,1])
-            
             return(game_data()$Question[5 * selec[1,2] + selec[1,1]])
         }
+    })
+    
+    output$score <- renderText({
+        return(paste0("$", values$score))
+    })
+    
+    observeEvent(input$submit, {
+        selec <- input$board_cells_selected
+        
+        answer <- gsub("[[:punct:]]", "", tolower(input$answer))
+        correct <- gsub("[[:punct:]]", "", tolower(game_data()$Answer[5 * selec[1,2] + selec[1,1]]))
+        
+        values$score <- values$score + 100 * selec[1,1] * ifelse(answer == correct, 1, -1)
+        
+        if (answer == correct) {
+            toggleModal(session, "correctModal", toggle = "open")
+        } else {
+            toggleModal(session, "incorrectModal", toggle = "open")
+        }
+        
+        assign(paste0("values$c", selec[1,2] + 1), selec[1,1])
+
+        updateTextInput(session, "answer", value = "")
     })
 
 }
