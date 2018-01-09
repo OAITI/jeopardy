@@ -20,7 +20,7 @@ board <- data.frame(
     C4 = paste0("$", seq(100, 500, by = 100)),
     C5 = paste0("$", seq(100, 500, by = 100)),
     C6 = paste0("$", seq(100, 500, by = 100))
-)
+, stringsAsFactors = FALSE)
 
 default <- data.frame(QID = NA, Category = NA, Question = "This guy wrote ggplot2", Answer = "Who is \"Hadley Wickham\"?")
 default <- default[rep(seq_len(nrow(default)), each = 30),]
@@ -65,7 +65,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 
 server <- function(input, output, session) {
     
-    values <- reactiveValues(score = 0)
+    values <- reactiveValues(score = 0, complete = NULL)
     
     categories <- reactive({
         sample(unique(jeopardy$Category), 6)
@@ -90,6 +90,17 @@ server <- function(input, output, session) {
     
     board_data <- reactive({
         names(board) <- paste0("<span style=\"color: yellow; background-color: #b0bed9\">", categories(), "</span>")
+
+        if (!is.null(values$complete)) {
+            sapply(values$complete, function(val) {
+                mycol <- ceiling(val / 5)
+                
+                myrow <- val %% 5
+                if (myrow == 0) myrow <- 5
+                
+                board[myrow, mycol] <<- NA
+            })
+        }
 
         mydt <- datatable(board, 
                           options = list(pageLength = 5,
@@ -120,8 +131,14 @@ server <- function(input, output, session) {
             return("Please select a category and dollar value by clicking the cell in the table!")
         } else {
             selec <- input$board_cells_selected
+            gameind <- 5 * selec[1,2] + selec[1,1]
             
-            return(game_data()$Question[5 * selec[1,2] + selec[1,1]])
+            if (gameind %in% values$complete) {
+                proxy %>% selectCells(NULL)
+                return("Please select a category and dollar value by clicking the cell in the table!")
+            }
+            
+            return(game_data()$Question[gameind])
         }
     })
     
@@ -142,6 +159,8 @@ server <- function(input, output, session) {
         } else {
             toggleModal(session, "incorrectModal", toggle = "open")
         }
+        
+        values$complete <- c(values$complete, 5 * selec[1,2] + selec[1,1])
         
         updateTextInput(session, "answer", value = "")
     })
