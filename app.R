@@ -26,6 +26,8 @@ default <- data.frame(QID = NA, Category = NA, Question = "This guy wrote ggplot
 default <- default[rep(seq_len(nrow(default)), each = 30),]
 
 ui <- fluidPage(theme = shinytheme("cerulean"),
+                
+   includeCSS("css/styles.css"),
    
    titlePanel("Data Science Jeopardy"),
    
