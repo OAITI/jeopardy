@@ -22,7 +22,7 @@ board <- data.frame(
     C6 = paste0("$", seq(100, 500, by = 100))
 , stringsAsFactors = FALSE)
 
-default <- data.frame(QID = NA, Category = NA, Question = "This guy wrote ggplot2", Answer = "Who is \"Hadley Wickham\"?")
+default <- data.frame(QID = NA, Category = NA, Question = "Hailing from New Zealand, this former professor and current RStudio employee received his Doctorate from Iowa State University with a dissertation describing practical tools for R programmers, such as reshape2 and ggplot2.", Answer = "Who is \"Hadley Wickham\"?")
 default <- default[rep(seq_len(nrow(default)), each = 30),]
 
 ui <- fluidPage(theme = shinytheme("cerulean"),
