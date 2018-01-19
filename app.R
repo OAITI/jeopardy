@@ -67,7 +67,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
 
 server <- function(input, output, session) {
     
-    values <- reactiveValues(score = 0, complete = NULL)
+    values <- reactiveValues(score = 0, complete = NULL, selected = NULL)
     
     categories <- reactive({
         sample(unique(jeopardy$Category), 6)
@@ -133,14 +133,24 @@ server <- function(input, output, session) {
             return("Please select a category and dollar value by clicking the cell in the table!")
         } else {
             selec <- input$board_cells_selected
-            gameind <- 5 * selec[1,2] + selec[1,1]
             
-            if (gameind %in% values$complete) {
-                proxy %>% selectCells(NULL)
-                return("Please select a category and dollar value by clicking the cell in the table!")
-            }
-            
-            return(game_data()$Question[gameind])
+            isolate({
+                if (!is.null(values$selected)) {
+                    proxy %>% selectCells(values$selected)
+                } else {
+                    values$selected <- selec
+                }
+                
+                gameind <- 5 * values$selected[1,2] + values$selected[1,1]
+                
+                if (gameind %in% values$complete) {
+                    values$selected <- NULL
+                    proxy %>% selectCells(NULL)
+                    return("Please select a category and dollar value by clicking the cell in the table!")
+                }
+                
+                return(game_data()$Question[gameind])
+            })
         }
     })
     
@@ -149,6 +159,7 @@ server <- function(input, output, session) {
     })
     
     observeEvent(input$submit, {
+        values$selected <- NULL
         selec <- input$board_cells_selected
         
         answer <- gsub("[[:punct:]]", "", tolower(input$answer))
