@@ -4,7 +4,7 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(DT)
-library(shinyBS)
+library(shinyjs)
 
 ## Set images resource path
 addResourcePath("images", "images")
@@ -27,6 +27,8 @@ default <- default[rep(seq_len(nrow(default)), each = 30),]
 
 ui <- fluidPage(theme = shinytheme("cerulean"),
                 
+   useShinyjs(),
+                
    includeCSS("css/styles.css"),
    
    titlePanel("Data Science Jeopardy"),
@@ -46,12 +48,6 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
       ),
       
       mainPanel(
-          bsModal(id = 'correctModal', title = 'Correct Answer :)', trigger = '',
-                  size = 'medium', HTML("That is Correct!")),
-          
-          bsModal(id = 'incorrectModal', title = 'Incorrect Answer :(', trigger = '',
-                  size = 'medium', HTML("That is Incorrect!")),
-          
           h3("Game Board"),
           
           div(DT::dataTableOutput("board"), style = "font-size: 125%; text-align: center"),
@@ -60,7 +56,6 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
           
           h3("Score"),
           div(textOutput("score"), style = "font-size: 200%")
-          #DT::dataTableOutput("game")
       )
    )
 )
@@ -167,12 +162,10 @@ server <- function(input, output, session) {
         
         values$score <- values$score + 100 * selec[1,1] * ifelse(answer == correct, 1, -1)
         
-        if (answer == correct) {
-            toggleModal(session, "correctModal", toggle = "open")
-        } else {
-            toggleModal(session, "incorrectModal", toggle = "open")
-        }
+        ans_cor <- "incorrect"
+        if (answer == correct) ans_cor <- "correct"
         
+        shinyjs:::alert(text = paste0("Your answer is ", ans_cor))
         values$complete <- c(values$complete, 5 * selec[1,2] + selec[1,1])
         
         updateTextInput(session, "answer", value = "")
