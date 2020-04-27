@@ -50,7 +50,7 @@ ui <- fluidPage(theme = shinytheme("cerulean"),
       mainPanel(
           h3("Game Board"),
           
-          div(DT::dataTableOutput("board"), style = "font-size: 125%; text-align: center"),
+          div(DTOutput("board"), style = "font-size: 125%; text-align: center"),
           
           hr(),
           
@@ -113,13 +113,13 @@ server <- function(input, output, session) {
         return(mydt)
     })
     
-    output$board <- DT::renderDataTable(
+    output$board <- renderDT(
         board_data()
     )
     
-    proxy = dataTableProxy("board")
+    proxy = DT::dataTableProxy("board")
     
-    output$game <- DT::renderDataTable(
+    output$game <- renderDT(
         game_data()
     )
     
